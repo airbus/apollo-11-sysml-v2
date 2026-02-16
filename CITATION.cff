@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this model, please cite it as below."
+authors:
+- family-names: "Helle"
+  given-names: "Philipp"
+  orcid: "https://orcid.org/0000-0001-9363-4958"
+- family-names: "Schramm"
+  given-names: "Gerrit"
+  orcid: "https://orcid.org/0000-0002-4617-5469"
+title: "Apollo 11 SysML v2 Model"
+version: 1.0.0
+doi: "TBD"
+date-released: TBD
+url: "https://github.com/github-linguist/linguist"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Helle"
+    given-names: "Philipp"
+    orcid: "https://orcid.org/0000-0001-9363-4958"
+  - family-names: "Schramm"
+    given-names: "Gerrit"
+    orcid: "https://orcid.org/0000-0002-4617-5469"
+  doi: "TBD"
+  journal: "Submitted to INCOSE Systems Engineering"
+  month: TBD
+  start: TBD # First page number
+  end: TBD # Last page number
+  title: "Fly me to the Moon - Modeling Apollo 11 using SysML v2"
+  issue: TBD
+  volume: TBD
+  year: unpublished
