@@ -8,7 +8,7 @@ Please note that all of your interactions in the project are subject to our [Cod
 
 ## Reporting Issues
 
-Before reporting a new issue, please ensure that the issue was not already reported or fixed by searching through our [`issues list`](https://github.com/airbus/tbd/issues).
+Before reporting a new issue, please ensure that the issue was not already reported or fixed by searching through our [`issues list`](https://github.com/airbus/apollo-11-sysml-v2/issues).
 
 When creating a new issue, please be sure to include a **title and clear description**, as much relevant information as possible, and, if possible, a test case.
 
