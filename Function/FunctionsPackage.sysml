@@ -7,12 +7,10 @@
 
 package FunctionsPackage {
 	
-	private import SystemPackage::*;
 	private import MissionPhasesPackage::*;
 	private import MissionRequirementsPackage::*;
 	private import ScalarValues::*;
 	private import ModelingMetadata::*;
-	private import MissionSpecificationPackage::*;
 	private import CoSMAPackage::*;
 
 	item def VehicleStatus { doc /* Represents the complete state of a vehicle system, including configuration, resources, and trajectory. */ }

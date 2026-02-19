@@ -9,7 +9,6 @@ package TechnicalPortsPackage {
 	
 	private import SI::*;
 	private import ISQ::*;
-	private import TechnicalComponentsPackage::*;
 
 	item def StructuralLoad { doc /* Represents the transfer of physical forces (compression, tension, torsion). */ }
 	item def CommandSignal { doc /* Represents a discrete command or electrical signal. */ }
