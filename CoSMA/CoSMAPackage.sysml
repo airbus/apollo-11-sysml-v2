@@ -48,7 +48,7 @@ library package CoSMAPackage {
 	abstract part def HardwareComponent :> TechnicalComponent, SimpleThing;
 
 	abstract part def PowerProvider :> HardwareComponent {
-		attribute powerGenerated :> ISQ::power = 0 [W];	
+		attribute powerGenerated :> ISQ::power default 0 [W];	
 	}
 
 	abstract part def PowerConsumer :> HardwareComponent {
