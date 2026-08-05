@@ -38,6 +38,7 @@ package Apollo11MissionExecutionPackage {
 				doc /* The flight crew begins entering the Command Module 'Columbia'. */
 				attribute missionTime :> ISQ::time = -9000 ['s']; 
 				snapshot missionSystemAtIngress :> apollo11MissionSystem {
+					part :>> spaceSuits[2];
 					part :>> spacecraft {
 						part :>> csm {
 							part :>> commandModule {
@@ -49,7 +50,7 @@ package Apollo11MissionExecutionPackage {
 				}
 				snapshot groundSystemAtIngress :> context : Apollo11MissionContext {
 					part :>> launchControlCenter {
-						perform GroundSupportSystem::performCrewIngress;
+						perform GroundSupportSystem::performCrewIngress :>> performCrewIngress;
 					}	
 				}
 				snapshot crewAtIngress :> crew {
@@ -80,21 +81,21 @@ package Apollo11MissionExecutionPackage {
 				doc /* State Activation: LaunchPhase begins with liftoff. */
 				attribute missionTime :> ISQ::time = 0 [s];
 				snapshot missionSystemAtT0 :> apollo11MissionSystem {
-					attribute velocity :> ISQ::speed = 0 [SI::'m⋅s⁻¹'];
+					attribute velocity :> ISQ::speed = 0 ['m⋅s⁻¹'];
 					part :>> launchVehicle {
 						part :>> stage1 {
 							attribute thrust :> ISQ::force = 35100 ['kN'];
 						}
-						perform LaunchSystem::provideStage1Thrust;
-						perform LaunchSystem::guideAscentTrajectory;
+						perform LaunchSystem::provideStage1Thrust :>> provideStage1Thrust;
+						perform LaunchSystem::guideAscentTrajectory :>> guideAscentTrajectory;
 					}
 					part :>> crew {
-						perform Crew::observeAscentDataFromCockpit;
+						perform Crew::observeAscentDataFromCockpit :>> observeAscentDataFromCockpit;
 					}
 				}
 				snapshot groundSystemAtT0 :> context : Apollo11MissionContext {
 					part :>> launchControlCenter {
-						perform GroundSupportSystem::analyzeLaunchTelemetryFromGround;
+						perform GroundSupportSystem::analyzeLaunchTelemetryFromGround :>> analyzeLaunchTelemetryFromGround;
 					}
 				}
 			}
@@ -102,10 +103,10 @@ package Apollo11MissionExecutionPackage {
 				doc /* Separation Event: The S-IC first stage separates. */
 				attribute missionTime :> ISQ::time = 168 [s];
 				snapshot missionSystemAtS1Sep :> apollo11MissionSystem {
-					attribute velocity :> ISQ::speed = 2400 [m/s];
+					attribute velocity :> ISQ::speed = 2400 ['m⋅s⁻¹'];
 					attribute altitude :> ISQ::length = 67 ['km'];
 					part :>> launchVehicle {
-						perform LaunchSystem::provideStage2Thrust;
+						perform LaunchSystem::provideStage2Thrust :>> provideStage2Thrust;
 					}
 				}
 			}
@@ -113,10 +114,10 @@ package Apollo11MissionExecutionPackage {
 				doc /* Separation Event: The S-II second stage separates. */
 				attribute missionTime :> ISQ::time = 540 [s];
 				snapshot missionSystemAtS2Sep :> apollo11MissionSystem {
-					attribute velocity :> ISQ::speed = 6800 [m/s];
+					attribute velocity :> ISQ::speed = 6800 ['m⋅s⁻¹'];
 					attribute altitude :> ISQ::length = 185 ['km'];
 					part :>> launchVehicle {
-						perform LaunchSystem::provideOrbitInsertionThrust;
+						perform LaunchSystem::provideOrbitInsertionThrust :>> provideOrbitInsertionThrust;
 					}
 				}
 			}
@@ -133,8 +134,8 @@ package Apollo11MissionExecutionPackage {
 						part :>> stage3 {
 							attribute engineStatus: String = "Burning";
 						}
-						perform LaunchSystem::provideTranslunarInjectionThrust;
-						perform LaunchSystem::controlTranslunarInjectionBurn;
+						perform LaunchSystem::provideTranslunarInjectionThrust :>> provideTranslunarInjectionThrust;
+						perform LaunchSystem::controlTranslunarInjectionBurn :>> controlTranslunarInjectionBurn;
 					}
 				}
 			}
@@ -143,7 +144,7 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 10384 [s];
 				snapshot missionSystemAtTLIEnd :> apollo11MissionSystem {
 					attribute status: String = "Translunar trajectory established";
-					attribute velocity :> ISQ::speed = 10840 [m/s];
+					attribute velocity :> ISQ::speed = 10840 ['m⋅s⁻¹'];
 				}
 			}
 		}
@@ -160,10 +161,10 @@ package Apollo11MissionExecutionPackage {
 							attribute relativeVelocity :> ISQ::speed = 0.5 [m/s];
 							attribute status: String = "Separated and maneuvering";
 						}
-						perform Spacecraft::provideAttitudeControlThrust;
+						perform Spacecraft::provideAttitudeControlThrust :>> provideAttitudeControlThrust;
 					}
 					part :>> crew {
-						perform Crew::executeTranspositionManeuver;
+						perform Crew::executeTranspositionManeuver :>> executeTranspositionManeuver;
 					}
 				}
 			}
@@ -178,10 +179,10 @@ package Apollo11MissionExecutionPackage {
 							}
 						}
 						attribute status: String = "Soft docked";
-						perform Spacecraft::mechanicallyLatchModules;
+						perform Spacecraft::mechanicallyLatchModules :>> mechanicallyLatchModules;
 					}
 					part :>> crew {
-						perform Crew::connectSpacecraft;
+						perform Crew::connectSpacecraft :>> connectSpacecraft;
 					}
 				}
 			}
@@ -205,10 +206,10 @@ package Apollo11MissionExecutionPackage {
 				snapshot missionSystemAtTLC :> apollo11MissionSystem {
 					part :>> spacecraft {
 						attribute status: String = "Passive thermal control (barbecue roll) initiated";
-						perform Spacecraft::provideAttitudeControlThrust;
+						perform Spacecraft::provideAttitudeControlThrust :>> provideAttitudeControlThrust;
 					}
 					part :>> crew {
-						perform Crew::monitorOnboardSystems;
+						perform Crew::monitorOnboardSystems :>> monitorOnboardSystems;
 					}
 				}
 			}
@@ -228,8 +229,8 @@ package Apollo11MissionExecutionPackage {
 								attribute fuelRemaining :> ISQ::mass = 18400 [kg];
 							}
 						}
-						perform Spacecraft::provideLunarOrbitInsertionThrust;
-						perform Spacecraft::controlLunarOrbitInsertionBurn;
+						perform Spacecraft::provideLunarOrbitInsertionThrust :>> provideLunarOrbitInsertionThrust;
+						perform Spacecraft::controlLunarOrbitInsertionBurn :>> controlLunarOrbitInsertionBurn;
 					}
 				}
 			}
@@ -256,8 +257,8 @@ package Apollo11MissionExecutionPackage {
 						}
 					}
 					part :>> crew {
-						perform Crew::performOrbitalSystemCheckouts;
-						perform Crew::prepareLanderForSeparation;
+						perform Crew::performOrbitalSystemCheckouts :>> performOrbitalSystemCheckouts;
+						perform Crew::prepareLanderForSeparation :>> prepareLanderForSeparation;
 					}
 				}
 			}
@@ -266,7 +267,7 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 353100 [s]; 
 				snapshot missionSystemAtUndocking :> apollo11MissionSystem {
 					part :>> spacecraft {
-						perform Spacecraft::separateLanderFromOrbiter;
+						perform Spacecraft::separateLanderFromOrbiter :>> separateLanderFromOrbiter;
 					}
 				}
 			}
@@ -286,7 +287,7 @@ package Apollo11MissionExecutionPackage {
 								attribute throttleLevel :> ratio = 90['%'];
 							}
 						}
-						perform Spacecraft::executeDescentBurn;
+						perform Spacecraft::executeDescentBurn :>> executeDescentBurn;
 					}
 				}
 			}
@@ -303,8 +304,8 @@ package Apollo11MissionExecutionPackage {
 						}
 					}
 					part :>> crew {
-						perform Crew::manuallyPilotLander;
-						perform Crew::performPostLandingCheck;
+						perform Crew::manuallyPilotLander :>> manuallyPilotLander;
+						perform Crew::performPostLandingCheck :>> performPostLandingCheck;
 					}
 				}
 			}
@@ -322,13 +323,13 @@ package Apollo11MissionExecutionPackage {
 					part :>> spaceSuits[0] {
 						attribute oxygenRemaining :> ISQ::duration = 6.5 ['h'];
 						attribute status: String = "Nominal";
-						perform EVASystem::provideIndividualLifesupport;
+						perform EVASystem::provideIndividualLifesupport :>> provideIndividualLifesupport;
 					}
 					part :>> crew {
 						part :>> commander {
-							perform Crew::conductSurfaceExploration;
-							perform Crew::gatherLunarSamples;
-							perform Crew::deploySurfaceExperiments;
+							perform Crew::conductSurfaceExploration :>> conductSurfaceExploration;
+							perform Crew::gatherLunarSamples :>> gatherLunarSamples;
+							perform Crew::deploySurfaceExperiments :>> deploySurfaceExperiments;
 						}
 					}
 				}
@@ -340,6 +341,7 @@ package Apollo11MissionExecutionPackage {
 				doc /* The EVA is complete and the crew are back inside the LM. */
 				attribute missionTime :> ISQ::time = 393300 [s];
 				snapshot missionSystemAtEVAEnd :> apollo11MissionSystem {
+					part :>> spaceSuits[2];
 					part :>> spacecraft {
 						part :>> lm {
 							attribute samplesStowed: Boolean = true;
@@ -347,7 +349,7 @@ package Apollo11MissionExecutionPackage {
 						}
 					}
 					part :>> crew {
-						perform Crew::completeExtravehicularActivity;
+						perform Crew::completeExtravehicularActivity :>> completeExtravehicularActivity;
 					}
 				}
 			}
@@ -361,7 +363,7 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 447721 [s]; 
 				snapshot missionSystemAtLunarLiftoff :> apollo11MissionSystem {
 					part :>> spacecraft {
-						perform Spacecraft::executeAscentBurn;
+						perform Spacecraft::executeAscentBurn :>> executeAscentBurn;
 					}
 				}
 			}
@@ -371,8 +373,8 @@ package Apollo11MissionExecutionPackage {
 				snapshot missionSystemAtDocking :> apollo11MissionSystem {
 					attribute status: String = "Docked in lunar orbit, preparing for crew transfer";
 					part :>> crew {
-						perform Crew::connectSpacecraft;
-						perform Crew::transferCrewAndMaterials;
+						perform Crew::connectSpacecraft :>> connectSpacecraft;
+						perform Crew::transferCrewAndMaterials :>> transferCrewAndMaterials;
 					}
 				}
 			}
@@ -386,7 +388,7 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 478500 [s]; 
 				snapshot missionSystemAtTEI :> apollo11MissionSystem {
 					part :>> spacecraft {
-						perform Spacecraft::executeTransearthBurn;
+						perform Spacecraft::executeTransearthBurn :>> executeTransearthBurn;
 					}
 				}
 			}
@@ -414,7 +416,7 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 688200 [s];
 				snapshot missionSystemAtCMSMSep :> apollo11MissionSystem {
 					part :>> spacecraft {
-						perform Spacecraft::separateReturnCapsule;
+						perform Spacecraft::separateReturnCapsule :>> separateReturnCapsule;
 					}
 				}
 			}
@@ -429,7 +431,7 @@ package Apollo11MissionExecutionPackage {
 								attribute gForce :> ISQ::acceleration = 6.5 [gn];
 							}
 						}
-						perform Spacecraft::guideAtmosphericEntry;
+						perform Spacecraft::guideAtmosphericEntry :>> guideAtmosphericEntry;
 					}
 				}
 			}
@@ -438,8 +440,8 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 690395 [s]; 
 				snapshot missionSystemAtSplashdown :> apollo11MissionSystem {
 					part :>> spacecraft {
-						perform Spacecraft::deployDecelerators;
-						perform Spacecraft::performSplashdown;
+						perform Spacecraft::deployDecelerators :>> deployDecelerators;
+						perform Spacecraft::performSplashdown :>> performSplashdown;
 					}
 				}
 			}
@@ -453,8 +455,8 @@ package Apollo11MissionExecutionPackage {
 				attribute missionTime :> ISQ::time = 693000 [s]; 
 				snapshot groundSystemAtRecovery :> context : Apollo11MissionContext {
 					part :>> recoveryForces {
-						perform GroundSupportSystem::retrieveVehicleAndCrew;
-						perform GroundSupportSystem::executeQuarantine;
+						perform GroundSupportSystem::retrieveVehicleAndCrew :>> retrieveVehicleAndCrew;
+						perform GroundSupportSystem::executeQuarantine :>> executeQuarantine;
 					}
 				}
 			}

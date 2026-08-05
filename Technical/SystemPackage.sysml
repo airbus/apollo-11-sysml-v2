@@ -20,7 +20,7 @@ package SystemPackage {
 			individual part lm: 'LM-5' :>> lunarModule;
 		}
 		
-		part spaceSuits[2] : ExtravehicularMobilityUnit :> constituentSystems;
+		part spaceSuits[0..2] : ExtravehicularMobilityUnit :> constituentSystems;
 		
 		interface lvToPayload : LVPayloadInterface connect
 			launchVehicle.instrumentUnit.payloadInterfacePort to spacecraft.spacecraftLMAdapter.launchVehicleInterfacePort;

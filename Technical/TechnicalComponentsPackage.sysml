@@ -16,7 +16,7 @@ package TechnicalComponentsPackage {
 
 	abstract part def PropelledSpacecraft :> FuelledComponent {
 		attribute maxThrust :> ISQ::force;
-		attribute specificImpulse :> specificImpulse;
+		attribute specificImpulse :> CoSMAQuantitiesAndUnitsPackage::specificImpulse;
 	}
 
 	abstract part def FuelledComponent :> HardwareComponent {
@@ -28,7 +28,7 @@ package TechnicalComponentsPackage {
 	abstract part def RocketEngine :> HardwareComponent {
 		doc /* An abstract representation of a rocket engine, defining its core performance attributes. */
 		attribute thrustVacuum :> ISQ::force;
-		attribute specificImpulseVacuum :> specificImpulse;
+		attribute specificImpulseVacuum :> CoSMAQuantitiesAndUnitsPackage::specificImpulse;
 	}
 
 	abstract part def RocketStage :> FuelledComponent {

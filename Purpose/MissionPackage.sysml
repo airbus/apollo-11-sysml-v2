@@ -25,7 +25,8 @@ package MissionPackage {
 		
 		part apollo11MissionSystem : Apollo11MissionSystem :> system;
 		part apollo11MissionContext : Apollo11MissionContext :> context;
-		
+		part crew[1..*] : Astronaut, LogicalComponentsPackage::Crew :>> crew;
+
 		perform action performLunarMission : PerformLunarMission;
 		
 		individual part commander : 'Neil Armstrong' :> crew;
