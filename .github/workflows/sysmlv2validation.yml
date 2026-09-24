@@ -29,7 +29,7 @@ jobs:
       # Checkout Apollo 11 repository
       # ------------------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ------------------------------------------------------------
       # Install pre-built sysml-toolkit release binary
@@ -609,7 +609,7 @@ jobs:
       # ------------------------------------------------------------
       - name: Upload SysML validation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sysml-validation-report
           path: reports/
