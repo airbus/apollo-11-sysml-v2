@@ -1,0 +1,536 @@
+# Apollo 11 SysML v2 validation workflow
+#
+# Validates and evaluates the complete model with the matching SysML v2
+# standard library, then publishes the results as a workflow artifact.
+
+name: SysML v2 Validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate and evaluate SysML model
+    runs-on: ubuntu-latest
+
+    env:
+      SYSML_TOOLKIT_VERSION: v0.9.1
+      SYSML_RELEASE_VERSION: "2026-08"
+
+    steps:
+      # ------------------------------------------------------------
+      # Checkout Apollo 11 repository
+      # ------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------
+      # Install pre-built sysml-toolkit release binary
+      # ------------------------------------------------------------
+      - name: Install sysml-toolkit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          RELEASE_API="https://api.github.com/repos/Open-MBEE/sysml-toolkit/releases/tags/${SYSML_TOOLKIT_VERSION}"
+          RELEASE_JSON="${RUNNER_TEMP}/sysml-toolkit-release.json"
+
+          echo "Reading release metadata from:"
+          echo "${RELEASE_API}"
+
+          curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${RELEASE_API}" \
+            -o "${RELEASE_JSON}"
+
+          # Select the Linux x86-64 binary/archive from the official
+          # v0.9.1 release assets.
+          mapfile -t ASSET_INFO < <(
+            python3 - "${RELEASE_JSON}" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as f:
+              release = json.load(f)
+
+          candidates = []
+
+          for asset in release.get("assets", []):
+              name = asset["name"]
+              lower = name.lower()
+
+              if "linux" not in lower:
+                  continue
+
+              if not any(
+                  arch in lower
+                  for arch in ("x86_64", "amd64", "x64")
+              ):
+                  continue
+
+              # Ignore checksums/signatures.
+              if any(
+                  suffix in lower
+                  for suffix in (
+                      "sha256",
+                      "checksum",
+                      ".sig",
+                      ".asc",
+                  )
+              ):
+                  continue
+
+              score = 0
+
+              if "sysmlv2" in lower:
+                  score += 100
+
+              if lower.endswith(
+                  (".tar.gz", ".tgz", ".tar.xz", ".zip")
+              ):
+                  score += 50
+
+              # Prefer a portable static build if both GNU and musl
+              # artifacts exist.
+              if "musl" in lower:
+                  score += 10
+
+              candidates.append(
+                  (
+                      score,
+                      name,
+                      asset["browser_download_url"],
+                  )
+              )
+
+          if not candidates:
+              print(
+                  "No Linux x86-64 release asset found.",
+                  file=sys.stderr,
+              )
+              print("Available assets:", file=sys.stderr)
+
+              for asset in release.get("assets", []):
+                  print(
+                      f"  {asset['name']}",
+                      file=sys.stderr,
+                  )
+
+              sys.exit(1)
+
+          candidates.sort(reverse=True)
+
+          _, name, url = candidates[0]
+
+          print(name)
+          print(url)
+          PY
+          )
+
+          ASSET_NAME="${ASSET_INFO[0]}"
+          ASSET_URL="${ASSET_INFO[1]}"
+
+          echo "Selected release asset:"
+          echo "  ${ASSET_NAME}"
+          echo "  ${ASSET_URL}"
+
+          ASSET_PATH="${RUNNER_TEMP}/${ASSET_NAME}"
+          EXTRACT_DIR="${RUNNER_TEMP}/sysml-toolkit"
+          BIN_DIR="${RUNNER_TEMP}/bin"
+
+          mkdir -p "${EXTRACT_DIR}" "${BIN_DIR}"
+
+          curl -fL \
+            --retry 3 \
+            --retry-delay 2 \
+            -o "${ASSET_PATH}" \
+            "${ASSET_URL}"
+
+          case "${ASSET_NAME}" in
+            *.tar.gz|*.tgz)
+              tar -xzf "${ASSET_PATH}" \
+                -C "${EXTRACT_DIR}"
+              ;;
+
+            *.tar.xz)
+              tar -xJf "${ASSET_PATH}" \
+                -C "${EXTRACT_DIR}"
+              ;;
+
+            *.zip)
+              unzip -q "${ASSET_PATH}" \
+                -d "${EXTRACT_DIR}"
+              ;;
+
+            *)
+              # Handle the case where the release asset is the
+              # executable itself rather than an archive.
+              cp "${ASSET_PATH}" \
+                "${EXTRACT_DIR}/sysmlv2"
+              chmod +x \
+                "${EXTRACT_DIR}/sysmlv2"
+              ;;
+          esac
+
+          SYSMLV2_BIN="$(
+            find "${EXTRACT_DIR}" \
+              -type f \
+              -name sysmlv2 \
+              -print \
+              -quit
+          )"
+
+          if [[ -z "${SYSMLV2_BIN}" ]]; then
+            echo "::error::sysmlv2 executable not found in release asset."
+            echo "Extracted files:"
+            find "${EXTRACT_DIR}" -maxdepth 3 -type f -print
+            exit 1
+          fi
+
+          install \
+            -m 0755 \
+            "${SYSMLV2_BIN}" \
+            "${BIN_DIR}/sysmlv2"
+
+          echo "${BIN_DIR}" >> "${GITHUB_PATH}"
+
+      - name: Show sysml-toolkit version
+        run: |
+          sysmlv2 --version
+
+      # ------------------------------------------------------------
+      # Download the matching SysML v2 standard library
+      # ------------------------------------------------------------
+      - name: Checkout SysML v2 standard library
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git clone \
+            --depth 1 \
+            --branch "${SYSML_RELEASE_VERSION}" \
+            https://github.com/Systems-Modeling/SysML-v2-Release.git \
+            "${RUNNER_TEMP}/SysML-v2-Release"
+
+          SYSML_LIB_DIR="${RUNNER_TEMP}/SysML-v2-Release/sysml.library"
+
+          if [[ ! -d "${SYSML_LIB_DIR}" ]]; then
+            echo "::error::SysML standard library not found."
+            exit 1
+          fi
+
+          echo "SYSML_LIB_DIR=${SYSML_LIB_DIR}" \
+            >> "${GITHUB_ENV}"
+
+      # ------------------------------------------------------------
+      # Find all .sysml files
+      # ------------------------------------------------------------
+      - name: Discover SysML files
+        id: files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p reports
+
+          # NUL-separated list so filenames containing spaces are safe.
+          find "${GITHUB_WORKSPACE}" \
+            -type f \
+            -name '*.sysml' \
+            -print0 \
+            | sort -z \
+            > "${RUNNER_TEMP}/sysml-files.bin"
+
+          mapfile -d '' -t FILES \
+            < "${RUNNER_TEMP}/sysml-files.bin"
+
+          if [[ "${#FILES[@]}" -eq 0 ]]; then
+            echo "::error::No .sysml files found."
+            exit 1
+          fi
+
+          printf '%s\n' "${FILES[@]#${GITHUB_WORKSPACE}/}" \
+            > reports/model-files.txt
+
+          echo "Found ${#FILES[@]} SysML files:"
+          printf '  %s\n' \
+            "${FILES[@]#${GITHUB_WORKSPACE}/}"
+
+          echo "count=${#FILES[@]}" \
+            >> "${GITHUB_OUTPUT}"
+
+      # ------------------------------------------------------------
+      # Validate all files together as ONE model
+      # ------------------------------------------------------------
+      - name: Validate model
+        id: validation
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          mapfile -d '' -t FILES \
+            < "${RUNNER_TEMP}/sysml-files.bin"
+
+          set +e
+
+          sysmlv2 check \
+            --format json \
+            --lib "${SYSML_LIB_DIR}" \
+            "${FILES[@]}" \
+            > reports/validation.json \
+            2> reports/validation.stderr
+
+          STATUS=$?
+
+          set -e
+
+          echo "Validation exit code: ${STATUS}"
+          echo "status=${STATUS}" \
+            >> "${GITHUB_OUTPUT}"
+
+          # Do not fail here. We want evaluation and report generation
+          # to run even when validation finds errors.
+          exit 0
+
+      # ------------------------------------------------------------
+      # Evaluate all computable model values
+      # ------------------------------------------------------------
+      - name: Evaluate model
+        id: evaluation
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          mapfile -d '' -t FILES \
+            < "${RUNNER_TEMP}/sysml-files.bin"
+
+          set +e
+
+          sysmlv2 eval \
+            --lib "${SYSML_LIB_DIR}" \
+            "${FILES[@]}" \
+            --all \
+            > reports/evaluation.txt \
+            2> reports/evaluation.stderr
+
+          STATUS=$?
+
+          set -e
+
+          echo "Evaluation exit code: ${STATUS}"
+          echo "status=${STATUS}" \
+            >> "${GITHUB_OUTPUT}"
+
+          exit 0
+
+      # ------------------------------------------------------------
+      # Build GitHub Actions report
+      # ------------------------------------------------------------
+      - name: Generate report
+        if: always()
+        env:
+          FILE_COUNT: ${{ steps.files.outputs.count }}
+          VALIDATION_STATUS: ${{ steps.validation.outputs.status }}
+          EVALUATION_STATUS: ${{ steps.evaluation.outputs.status }}
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import os
+          from pathlib import Path
+
+          reports = Path("reports")
+
+          def read(name):
+              path = reports / name
+              if not path.exists():
+                  return ""
+              return path.read_text(
+                  encoding="utf-8",
+                  errors="replace",
+              )
+
+          def preview(text, max_lines=200):
+              lines = text.splitlines()
+
+              if len(lines) <= max_lines:
+                  return text
+
+              return (
+                  "\n".join(lines[:max_lines])
+                  + f"\n\n... truncated; "
+                    f"{len(lines) - max_lines} additional lines "
+                    f"are available in the workflow artifact."
+              )
+
+          validation_status = os.environ.get(
+              "VALIDATION_STATUS",
+              "unknown",
+          )
+
+          evaluation_status = os.environ.get(
+              "EVALUATION_STATUS",
+              "unknown",
+          )
+
+          validation_ok = validation_status == "0"
+          evaluation_ok = evaluation_status == "0"
+
+          validation_label = (
+              "✅ Passed"
+              if validation_ok
+              else "❌ Failed"
+          )
+
+          evaluation_label = (
+              "✅ Passed"
+              if evaluation_ok
+              else "❌ Failed"
+          )
+
+          overall = (
+              "✅ Passed"
+              if validation_ok and evaluation_ok
+              else "❌ Failed"
+          )
+
+          validation = read("validation.json")
+          validation_stderr = read(
+              "validation.stderr"
+          )
+          evaluation = read("evaluation.txt")
+          evaluation_stderr = read(
+              "evaluation.stderr"
+          )
+
+          report = f"""# SysML v2 Model Validation Report
+
+          ## Summary
+
+          | Check | Result |
+          |---|---|
+          | Model files | {os.environ.get("FILE_COUNT", "unknown")} |
+          | sysml-toolkit | {os.environ.get("SYSML_TOOLKIT_VERSION", "")} |
+          | SysML standard library | {os.environ.get("SYSML_RELEASE_VERSION", "")} |
+          | Validation | {validation_label} |
+          | Evaluation | {evaluation_label} |
+          | Overall | **{overall}** |
+
+          **Commit:** `{os.environ.get("GITHUB_SHA", "")}`
+
+          ## Validation
+
+          Exit code: `{validation_status}`
+
+          ```json
+          {preview(validation)}
+          ```
+
+          """
+
+          if validation_stderr.strip():
+              report += f"""
+          ### Validation diagnostics
+
+          ```text
+          {preview(validation_stderr)}
+          ```
+          """
+
+          report += f"""
+          ## Evaluation
+
+          Exit code: `{evaluation_status}`
+
+          ```text
+          {preview(evaluation)}
+          ```
+          """
+
+          if evaluation_stderr.strip():
+              report += f"""
+          ### Evaluation diagnostics
+
+          ```text
+          {preview(evaluation_stderr)}
+          ```
+          """
+
+          report += """
+          ## Files
+
+          The complete outputs are available in the
+          `sysml-validation-report` workflow artifact:
+
+          - `validation.json`
+          - `validation.stderr`
+          - `evaluation.txt`
+          - `evaluation.stderr`
+          - `model-files.txt`
+          """
+
+          # Remove indentation introduced by the Python source.
+          import textwrap
+          report = textwrap.dedent(report)
+
+          (reports / "report.md").write_text(
+              report,
+              encoding="utf-8",
+          )
+
+          summary = os.environ.get(
+              "GITHUB_STEP_SUMMARY"
+          )
+
+          if summary:
+              with open(
+                  summary,
+                  "a",
+                  encoding="utf-8",
+              ) as f:
+                  f.write(report)
+          PY
+
+      # ------------------------------------------------------------
+      # Upload full results
+      # ------------------------------------------------------------
+      - name: Upload SysML validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sysml-validation-report
+          path: reports/
+          retention-days: 30
+
+      # ------------------------------------------------------------
+      # Final CI gate
+      # ------------------------------------------------------------
+      - name: Enforce model validation
+        if: always()
+        shell: bash
+        run: |
+          VALIDATION="${{ steps.validation.outputs.status }}"
+          EVALUATION="${{ steps.evaluation.outputs.status }}"
+
+          FAILED=0
+
+          if [[ "${VALIDATION}" != "0" ]]; then
+            echo "::error::SysML model validation failed."
+            FAILED=1
+          fi
+
+          if [[ "${EVALUATION}" != "0" ]]; then
+            echo "::error::SysML model evaluation failed."
+            FAILED=1
+          fi
+
+          exit "${FAILED}"
+
