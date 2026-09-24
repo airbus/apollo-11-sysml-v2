@@ -2,6 +2,8 @@
 #
 # Validates and evaluates the complete model with the matching SysML v2
 # standard library, then publishes the results as a workflow artifact.
+# SysML v2 kernel: https://github.com/Open-MBEE/sysml-toolkit
+# Pinned release: https://github.com/Open-MBEE/sysml-toolkit/releases/tag/v0.9.1
 
 name: SysML v2 Validation
 
@@ -344,6 +346,7 @@ jobs:
         shell: bash
         run: |
           python3 <<'PY'
+          import json
           import os
           from pathlib import Path
 
@@ -369,6 +372,92 @@ jobs:
                   + f"\n\n... truncated; "
                     f"{len(lines) - max_lines} additional lines "
                     f"are available in the workflow artifact."
+              )
+
+          def markdown_cell(value, limit=240):
+              text = " ".join(str(value or "").split())
+              text = text.replace("|", "\\|")
+
+              if len(text) > limit:
+                  text = text[: limit - 1].rstrip() + "…"
+
+              return text or "-"
+
+          def format_validation(validation):
+              try:
+                  document = json.loads(validation)
+              except json.JSONDecodeError:
+                  return (
+                      "**Unable to parse validation JSON.** The raw output "
+                      "is included below.\n\n"
+                      "```json\n"
+                      f"{preview(validation)}\n"
+                      "```"
+                  )
+
+              if not isinstance(document, dict):
+                  return (
+                      "**Unexpected validation JSON shape.** The raw output "
+                      "is included below.\n\n"
+                      "```json\n"
+                      f"{preview(validation)}\n"
+                      "```"
+                  )
+
+              findings = document.get("findings", [])
+              summary = document.get("summary", {})
+
+              if not isinstance(findings, list):
+                  findings = []
+
+              if not isinstance(summary, dict):
+                  summary = {}
+
+              summary_table = [
+                  "| Errors | Warnings | Infos | Hints |",
+                  "|---:|---:|---:|---:|",
+                  "| "
+                  f"{markdown_cell(summary.get('errors', 0))} | "
+                  f"{markdown_cell(summary.get('warnings', 0))} | "
+                  f"{markdown_cell(summary.get('infos', 0))} | "
+                  f"{markdown_cell(summary.get('hints', 0))} |",
+              ]
+
+              finding_table = [
+                  "| Severity | Stage | File | Location | Rule / Element | Message |",
+                  "|---|---|---|---:|---|---|",
+              ]
+
+              for finding in findings:
+                  if not isinstance(finding, dict):
+                      continue
+
+                  line = finding.get("line", "-")
+                  column = finding.get("col", "-")
+                  location = f"{line}:{column}"
+                  rule = finding.get("rule") or "-"
+                  element = finding.get("element") or "-"
+
+                  finding_table.append(
+                      "| "
+                      f"{markdown_cell(finding.get('severity', 'unknown')).upper()} | "
+                      f"{markdown_cell(finding.get('stage', '-'))} | "
+                      f"`{markdown_cell(finding.get('unitName', '-'))}` | "
+                      f"{markdown_cell(location)} | "
+                      f"{markdown_cell(rule)} / {markdown_cell(element)} | "
+                      f"{markdown_cell(finding.get('message', '-'))} |"
+                  )
+
+              if len(finding_table) == 2:
+                  finding_table.append(
+                      "| - | - | - | - | - | No validation findings. |"
+                  )
+
+              return (
+                  "### Summary\n\n"
+                  + "\n".join(summary_table)
+                  + "\n\n### Findings\n\n"
+                  + "\n".join(finding_table)
               )
 
           validation_status = os.environ.get(
@@ -403,6 +492,7 @@ jobs:
           )
 
           validation = read("validation.json")
+          validation_report = format_validation(validation)
           validation_stderr = read(
               "validation.stderr"
           )
@@ -430,9 +520,7 @@ jobs:
 
           Exit code: `{validation_status}`
 
-          ```json
-          {preview(validation)}
-          ```
+          {validation_report}
 
           """
 
