@@ -383,6 +383,23 @@ jobs:
 
               return text or "-"
 
+          def relative_path(value):
+              text = str(value or "")
+              workspace = os.environ.get("GITHUB_WORKSPACE", "")
+
+              if workspace:
+                  workspace = workspace.rstrip("/")
+
+                  if text == workspace:
+                      return "."
+
+                  prefix = f"{workspace}/"
+
+                  if text.startswith(prefix):
+                      return text[len(prefix):]
+
+              return text
+
           def format_validation(validation):
               try:
                   document = json.loads(validation)
@@ -442,7 +459,7 @@ jobs:
                       "| "
                       f"{markdown_cell(finding.get('severity', 'unknown')).upper()} | "
                       f"{markdown_cell(finding.get('stage', '-'))} | "
-                      f"`{markdown_cell(finding.get('unitName', '-'))}` | "
+                      f"`{markdown_cell(relative_path(finding.get('unitName', '-')))}` | "
                       f"{markdown_cell(location)} | "
                       f"{markdown_cell(rule)} / {markdown_cell(element)} | "
                       f"{markdown_cell(finding.get('message', '-'))} |"
