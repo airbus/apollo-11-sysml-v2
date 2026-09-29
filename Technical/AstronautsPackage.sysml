@@ -8,7 +8,6 @@
 package AstronautsPackage {
 	
 	private import CoSMAPackage::*;
-	private import ScalarValues::*;
 	private import Time::*;
 	
 	individual part def 'Gus Grissom' :> Astronaut {

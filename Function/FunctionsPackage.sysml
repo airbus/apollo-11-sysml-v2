@@ -8,7 +8,6 @@
 package FunctionsPackage {
 	
 	private import MissionPhasesPackage::*;
-	private import MissionRequirementsPackage::*;
 	private import ScalarValues::*;
 	private import ModelingMetadata::*;
 	private import CoSMAPackage::*;

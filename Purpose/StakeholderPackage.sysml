@@ -8,7 +8,6 @@
 package StakeholderPackage {
 
 	private import CoSMAPackage::*;
-	private import AstronautsPackage::*;
 	private import StakeholderNeedsPackage::*;
 
 	part def GovernmentAgency :> Stakeholder;

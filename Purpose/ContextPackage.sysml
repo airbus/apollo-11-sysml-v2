@@ -12,7 +12,6 @@ package ContextPackage {
 	private import ScalarValues::*;
 	private import CoSMAPackage::*;
 	private import CoSMAQuantitiesAndUnitsPackage::*;
-	private import USCustomaryUnits::*;
 	private import LogicalComponentsPackage::*;
 
 	part def EarthEnvironment {

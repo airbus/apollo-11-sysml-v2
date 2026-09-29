@@ -18,7 +18,6 @@ package Apollo11MissionExecutionPackage {
 	private import ContextPackage::*;
 	private import OccurrenceFunctions::*;
 	private import TechnicalComponentsPackage::*;
-	private import AstronautsPackage::*;
 	private import CoSMAQuantitiesAndUnitsPackage::*;
 
 	individual part def Apollo11MissionIndividual :> Apollo11Mission {
