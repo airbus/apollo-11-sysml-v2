@@ -7,50 +7,6 @@
 
 package Apollo11Model {
 	
-	//Analysis folder
-	private import AnalysisPackage::*;
-	private import CalculationsPackage::*;
-	
-	//CoSMA folder
-	private import CoSMAPackage::*;
-	private import CoSMAViewsPackage::*;
-	private import CoSMAQuantitiesAndUnitsPackage::*;
-	
-	//Execution folder
-	private import Apollo11MissionExecutionPackage::*;
-	
-	//Function folder
-	private import FunctionsPackage::*;
-	private import FunctionSpecificationPackage::*;
-	
-	//Logical folder
-	private import LogicalComponentsPackage::*;
-	
 	//Purpose folder
-	private import CapabilitiesPackage::*;
-	private import ContextPackage::*;
-	private import MissionPackage::*;
-	private import MissionPhasesPackage::*;
-	private import MissionSpecificationPackage::*;
 	private import StakeholderPackage::*;
-	
-	//Operation folder
-	private import OperationsPackage::*;
-	
-	//Program folder
-	private import ProgramPackage::*;
-	
-	//Requirements folder
-	private import FunctionalRequirementsPackage::*;
-	private import MissionRequirementsPackage::*;
-	private import StakeholderNeedsPackage::*;
-	private import TechnicalRequirementsPackage::*;
-	
-	//Technical folder
-	private import AstronautsPackage::*;
-	private import SystemPackage::*;
-	private import SystemSpecificationPackage::*;
-	private import TechnicalComponentsPackage::*;
-	private import TechnicalIndividualsPackage::*;
-	private import TechnicalPortsPackage::*;
 }
