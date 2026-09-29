@@ -12,9 +12,6 @@ library package CoSMAPackage {
 	private import ISQ::*;
 	private import SI::*;
 	private import MeasurementReferences::*;
-	private import Quantities::*;
-	private import Base::DataValue;
-	private import Metaobjects::*;
 	private import CoSMAQuantitiesAndUnitsPackage::*;
 	
     part def MassedComponent {

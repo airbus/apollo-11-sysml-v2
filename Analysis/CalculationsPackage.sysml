@@ -14,7 +14,6 @@ package CalculationsPackage {
 	private import CoSMAQuantitiesAndUnitsPackage::*;
 	private import TechnicalComponentsPackage::*;
 	private import NumericalFunctions::*;
-	private import CollectionFunctions::*;
 	private import ControlFunctions::*;
 	private import NumericalFunctions::*;
 	private import Parts::*;	

@@ -8,8 +8,6 @@
 package FunctionalRequirementsPackage {
     
 	private import SI::*;
-	private import ISQ::*;
-	private import ScalarValues::*;
 	private import CoSMAQuantitiesAndUnitsPackage::*;
 	private import USCustomaryUnits::*;
 	private import ModelingMetadata::*;

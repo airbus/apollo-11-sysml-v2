@@ -16,7 +16,6 @@ package MissionPackage {
 	private import ContextPackage::*;
 	private import CoSMAQuantitiesAndUnitsPackage::*;
 	private import SI::*;
-	private import ISQ::*;
 
 	part def Apollo11Mission :> MannedSpaceMission {
 		doc /* Apollo 11 was a spaceflight conducted from July 16 to 24, 1969, by the United States and launched by NASA. */

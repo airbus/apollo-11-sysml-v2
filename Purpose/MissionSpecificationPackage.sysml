@@ -9,7 +9,6 @@ package MissionSpecificationPackage {
 	
 	private import MissionRequirementsPackage::*;
 	private import MissionPackage::*;
-	private import OperationsPackage::*;
 	
 	requirement apollo11MissionSpecification {
 		doc /* Apollo 11 Mission requirements group */
