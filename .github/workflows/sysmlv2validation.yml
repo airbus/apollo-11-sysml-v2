@@ -3,7 +3,7 @@
 # Validates and evaluates the complete model with the matching SysML v2
 # standard library, then publishes the results as a workflow artifact.
 # SysML v2 kernel: https://github.com/Open-MBEE/sysml-toolkit
-# Pinned release: https://github.com/Open-MBEE/sysml-toolkit/releases/tag/v0.9.1
+# Pinned release: https://github.com/Open-MBEE/sysml-toolkit/releases/tag/v0.10.2
 
 name: SysML v2 Validation
 
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SYSML_TOOLKIT_VERSION: v0.9.1
+      SYSML_TOOLKIT_VERSION: v0.10.2
       SYSML_RELEASE_VERSION: "2026-08"
 
     steps:
@@ -55,7 +55,7 @@ jobs:
             -o "${RELEASE_JSON}"
 
           # Select the Linux x86-64 binary/archive from the official
-          # v0.9.1 release assets.
+          # v0.10.2 release assets.
           mapfile -t ASSET_INFO < <(
             python3 - "${RELEASE_JSON}" <<'PY'
           import json
