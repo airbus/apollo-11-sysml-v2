@@ -1,9 +1,9 @@
 # Apollo 11 SysML v2 validation workflow
 #
-# Validates and evaluates the complete model with the matching SysML v2
-# standard library, then publishes the results as a workflow artifact.
+# Validates, evaluates, and exports the complete model with the matching
+# SysML v2 standard library, then publishes reports and JSON as artifacts.
 # SysML v2 kernel: https://github.com/Open-MBEE/sysml-toolkit
-# Pinned release: https://github.com/Open-MBEE/sysml-toolkit/releases/tag/v0.9.1
+# Pinned release: https://github.com/Open-MBEE/sysml-toolkit/releases/tag/v0.10.2
 
 name: SysML v2 Validation
 
@@ -17,11 +17,11 @@ permissions:
 
 jobs:
   validate:
-    name: Validate and evaluate SysML model
+    name: Validate, evaluate, and export SysML model
     runs-on: ubuntu-latest
 
     env:
-      SYSML_TOOLKIT_VERSION: v0.9.1
+      SYSML_TOOLKIT_VERSION: v0.10.2
       SYSML_RELEASE_VERSION: "2026-08"
 
     steps:
@@ -55,7 +55,7 @@ jobs:
             -o "${RELEASE_JSON}"
 
           # Select the Linux x86-64 binary/archive from the official
-          # v0.9.1 release assets.
+          # v0.10.2 release assets.
           mapfile -t ASSET_INFO < <(
             python3 - "${RELEASE_JSON}" <<'PY'
           import json
@@ -335,6 +335,49 @@ jobs:
           exit 0
 
       # ------------------------------------------------------------
+      # Export all files together as ONE JSON model
+      # ------------------------------------------------------------
+      - name: Export model
+        id: export
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -d '' -t FILES \
+            < "${RUNNER_TEMP}/sysml-files.bin"
+
+          mkdir -p model-export
+
+          set +e
+
+          sysmlv2 convert \
+            --to full-json \
+            --lib "${SYSML_LIB_DIR}" \
+            "${FILES[@]}" \
+            -o model-export/Apollo11Model.json \
+            > reports/export.txt \
+            2> reports/export.stderr
+
+          STATUS=$?
+
+          set -e
+
+          echo "Export exit code: ${STATUS}"
+          echo "status=${STATUS}" \
+            >> "${GITHUB_OUTPUT}"
+
+          exit 0
+
+      - name: Upload SysML model JSON
+        if: steps.export.outputs.status == '0'
+        uses: actions/upload-artifact@v6
+        with:
+          name: sysml-model-json
+          path: model-export/Apollo11Model.json
+          if-no-files-found: error
+          retention-days: 30
+
+      # ------------------------------------------------------------
       # Build GitHub Actions report
       # ------------------------------------------------------------
       - name: Generate report
@@ -343,6 +386,7 @@ jobs:
           FILE_COUNT: ${{ steps.files.outputs.count }}
           VALIDATION_STATUS: ${{ steps.validation.outputs.status }}
           EVALUATION_STATUS: ${{ steps.evaluation.outputs.status }}
+          EXPORT_STATUS: ${{ steps.export.outputs.status }}
         shell: bash
         run: |
           python3 <<'PY'
@@ -487,8 +531,14 @@ jobs:
               "unknown",
           )
 
+          export_status = os.environ.get(
+              "EXPORT_STATUS",
+              "unknown",
+          )
+
           validation_ok = validation_status == "0"
           evaluation_ok = evaluation_status == "0"
+          export_ok = export_status == "0"
 
           validation_label = (
               "✅ Passed"
@@ -502,9 +552,15 @@ jobs:
               else "❌ Failed"
           )
 
+          export_label = (
+              "✅ Passed"
+              if export_ok
+              else "❌ Failed"
+          )
+
           overall = (
               "✅ Passed"
-              if validation_ok and evaluation_ok
+              if validation_ok and evaluation_ok and export_ok
               else "❌ Failed"
           )
 
@@ -517,6 +573,8 @@ jobs:
           evaluation_stderr = read(
               "evaluation.stderr"
           )
+          export_output = read("export.txt")
+          export_stderr = read("export.stderr")
 
           report = f"""# SysML v2 Model Validation Report
 
@@ -529,6 +587,7 @@ jobs:
           | SysML standard library | {os.environ.get("SYSML_RELEASE_VERSION", "")} |
           | Validation | {validation_label} |
           | Evaluation | {evaluation_label} |
+          | Export | {export_label} |
           | Overall | **{overall}** |
 
           **Commit:** `{os.environ.get("GITHUB_SHA", "")}`
@@ -569,6 +628,25 @@ jobs:
           ```
           """
 
+          report += f"""
+          ## Export
+
+          Exit code: `{export_status}`
+
+          ```text
+          {preview(export_output)}
+          ```
+          """
+
+          if export_stderr.strip():
+              report += f"""
+          ### Export diagnostics
+
+          ```text
+          {preview(export_stderr)}
+          ```
+          """
+
           report += """
           ## Files
 
@@ -579,7 +657,12 @@ jobs:
           - `validation.stderr`
           - `evaluation.txt`
           - `evaluation.stderr`
+          - `export.txt`
+          - `export.stderr`
           - `model-files.txt`
+
+          Successful exports are available as `Apollo11Model.json`
+          in the `sysml-model-json` workflow artifact.
           """
 
           # Remove indentation introduced by the Python source.
@@ -624,6 +707,7 @@ jobs:
         run: |
           VALIDATION="${{ steps.validation.outputs.status }}"
           EVALUATION="${{ steps.evaluation.outputs.status }}"
+          EXPORT="${{ steps.export.outputs.status }}"
 
           FAILED=0
 
@@ -634,6 +718,11 @@ jobs:
 
           if [[ "${EVALUATION}" != "0" ]]; then
             echo "::error::SysML model evaluation failed."
+            FAILED=1
+          fi
+
+          if [[ "${EXPORT}" != "0" ]]; then
+            echo "::error::SysML model export failed."
             FAILED=1
           fi
 
